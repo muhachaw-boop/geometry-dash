@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Geometry Dash Clone</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      background: #333;
+      display: block;
+    }
+    </style>
+</head>
+<body>
+  <canvas id="game" width="600" height="300"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    //Player
+    const player = {
+      x: 50,
+      y: 200,
+      width: 30,
+      height: 30,
+      dy: 0,
+      gravity: 0.8,
+      jumpPower: -12
+      grounded: false
+    };
+
+    //Obstacles
+    const obstacles = [];
+    let obstacleTimer = 0;
+    const obstacleInterval = 90; // frames
+
+    //Game variables
+    let scrollSpeed = 4
+    let frame = 0;
+    let gameOver = false
+
+    // Jump on space or click
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space') jump();
+    });
+    document.addEventListener('mousedown', jump);
+
+    function jump() {
+      if (player.grounded) {
+        player.dy = player.jumpPower;
+        player.grounded = false;
+      }
+    }
+
+    function spawnObstacle() {
+      const height = Math.random() * 50 + 20;
+      obstacles.push({
+        x: canvas.width,
+        y: canvas.height - height,
+        width: 20,
+        height: height
+      });
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      frame++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Ground
+      ctx.fillStyle = '#555';
+      ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+      // Player physics
+      player.dy += player.gravity;
+      player.y += player.dy;
+
+      if (player.y + player.height > canvas.height - 20) {
+        player.y = canvas.height - 20 - player.height;
+        player.dy = 0;
+        player.grounded = true;
+      }
+
+      // Draw player
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Spawn obstacles
+      if (frame % obstacleInterval === 0) spawnObstacle();
+
+      // Update obstacles
+      ctx.fillStyle = 'red';
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const ob = obstacles[i];
+        ob.x -= scrollSpeed;
+        ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+
+        // Collision
+        if (
+          player.x < ob.x + ob.width &&
+          player.x + player.width > ob.x &&
+          player.y < ob.y + ob.height &&
+          player.y + player.height > ob.y
+        ) {
+          gameOver = true;
+        }
+
+        // Remove off-screen obstacles
+        if (ob.x + ob.width < 0) obstacles.splice(i, 1);
+      }
+
+      // Score
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Score: ${Math.floor(frame / 10)}`, 10, 30);
+
+      if (!gameOver) requestAnimationFrame(update);
+      else ctx.fillText('Game Over!', canvas.width / 2 - 50, canvas.height / 2);
+    }
+
+    update();
+  </script>
+</body>
+</html>
